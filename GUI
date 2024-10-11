@@ -1,0 +1,94 @@
+#GUI for degradation efficiency prediction
+
+
+import tkinter as tk
+from tkinter import messagebox
+from tkinter import ttk  # For modern-looking widgets
+import numpy as np
+
+# GUI to input the sample data
+def make_prediction():
+    try:
+        # Get input values from the GUI
+        input_values = [
+            float(entry1.get()), float(entry2.get()), 
+            int(photocatalyst_combobox.get().split(':')[0]),  # Extract the numerical part
+            float(entry4.get()), 
+            int(mode_combobox.get().split(':')[0]), 
+            int(pollutant_combobox.get().split(':')[0]), 
+            float(entry7.get())
+        ]
+        
+        # Convert input to a DataFrame with the same column names used in training
+        sample_input = pd.DataFrame([input_values], columns=predictors.columns)  # Use the same column names
+
+        # Scale the input using the fitted scaler
+        scaled_input = scaler.transform(sample_input)
+        
+        # Make a prediction
+        prediction = model.predict(scaled_input)
+        
+        # Show the prediction in a message box
+        messagebox.showinfo("Prediction Result", f"Predicted degradation efficiency: {prediction[0][0]:.2f} %")
+    except Exception as e:
+        messagebox.showerror("Error", f"Invalid input or error in prediction: {str(e)}")
+
+
+# Create the main window
+root = tk.Tk()
+root.title("Degradation Efficiency Prediction")
+root.geometry('425x300')  # Adjusted window size
+root.configure(bg='#f0f0f0')
+
+# Style configuration
+style = ttk.Style()
+style.configure('TLabel', font=('Arial', 12))
+style.configure('TButton', font=('Arial', 12), padding=10)
+
+# Add labels and entry widgets for input
+labels = [
+    "Time (s)", "pH", "Photocatalyst", "Photocatalyst Dosage (g/l)", 
+    "Mode", "Type of Pollutant", "Concentration of Pollutant (mg/l)"
+]
+
+entries = []
+for i, label_text in enumerate(labels):
+    label = ttk.Label(root, text=label_text)
+    label.grid(row=i, column=0, padx=10, pady=5, sticky='e')  # Labels on left
+    
+    if label_text in ["Photocatalyst", "Mode", "Type of Pollutant"]:
+        # For categorical fields, add comboboxes
+        combobox = ttk.Combobox(root, font=('Arial', 12), state='readonly')
+        combobox.grid(row=i, column=1, padx=10, pady=5, sticky='ew')  # Align dropdowns
+        entries.append(combobox)
+    else:
+        # For numerical fields, add entry widgets
+        entry = ttk.Entry(root, font=('Arial', 12))
+        entry.grid(row=i, column=1, padx=10, pady=5, sticky='ew')  # Align text entries
+        entries.append(entry)
+
+# Set up combobox options
+photocatalyst_combobox = entries[2]
+photocatalyst_combobox['values'] = [
+    "1: CuO/TiO2", "2: SnO2/rGO", "3: La2O3/Brass", "4: CeO2/CuO/ZnO", 
+    "5: GOx/ZnO/TiO2", "6: GOx/TiO2"
+]
+photocatalyst_combobox.set("1: CuO/TiO2")  # Set default value
+
+mode_combobox = entries[4]
+mode_combobox['values'] = ["1: Slurry", "2: Immobilized"]
+mode_combobox.set("1: Slurry")  # Set default value
+
+pollutant_combobox = entries[5]
+pollutant_combobox['values'] = ["1: Phenol", "2: Tetracycline", "3: Ciprofloxacin", "4: Amoxicillin"]
+pollutant_combobox.set("1: Phenol")  # Set default value
+
+# Unpack the entry widgets
+entry1, entry2, photocatalyst_combobox, entry4, mode_combobox, pollutant_combobox, entry7 = entries
+
+# Add a button to make the prediction
+predict_button = ttk.Button(root, text="Predict", command=make_prediction)
+predict_button.grid(row=len(labels), column=0, columnspan=2, pady=20, sticky='ew')
+
+# Run the application
+root.mainloop()
